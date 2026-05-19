@@ -2,79 +2,196 @@
 
 ## Approach
 
-Each phase produces something working end-to-end before adding the next layer. We use existing MCP servers rather than building from scratch, which means we reach the agent layer faster — that's where the real learning is.
+Each phase produces something working end-to-end before adding the next layer. We use existing MCP servers rather than building from scratch — that's how we reach the agent layer faster, where the real learning is.
 
-Reference reading: *AI Agents with MCP* by Kyle Stratis.
+With 1 hour/day hands-on and Claude Code available for the coding work, each session should end with something observable: a server running, a tool call in a log, an answer on screen. Concepts are learned in conversation, not in solo reading blocks.
 
-## Phase 0 — Ground (Week 1–2)
+Reference reading: *AI Agents with MCP* by Kyle Stratis (read alongside phases, not upfront).
 
-**Goal:** Understand MCP conceptually and confirm the local environment works.
+## MCP server choices (committed, not under evaluation)
 
-- Read the MCP specification at `modelcontextprotocol.io`. Understand the distinction between *tools*, *resources*, and *prompts*.
-- Read Anthropic's tool use documentation. Understand how a model decides when to call a tool.
-- Confirm local stack: Podman GPU passthrough working, Trino reachable at `localhost:8081`, Ollama serving `qwen2.5:14b`.
-- Draw the architecture from `01-vision-and-architecture.md` from memory.
+- **Trino:** `alaturqua/mcp-trino-python` — Python source is readable; fits the stack; no Go toolchain.
+- **OpenMetadata:** built-in MCP server shipped with OpenMetadata 1.8+ — zero extra install, officially maintained.
 
-**Done when:** Can explain in plain language what an MCP server is, what an MCP client is, and what a tool call looks like in flight.
+---
 
-## Phase 1 — Deploy and learn Trino MCP server (Week 3–4)
+## Phase 0 — Ground (Week 1)
 
-**Goal:** A working Trino MCP server connected to the local Trino, with an AI client using it.
+**Goal:** Understand MCP concepts well enough to reason about tool calls, and confirm the local stack works.
 
-- Evaluate `txn2/mcp-trino` (Go) and `alaturqua/mcp-trino-python` (Python). Pick one based on ease of setup, tool completeness, and readability.
-- Install and configure against the local Trino at `localhost:8081`.
-- Connect it to Claude Desktop or Claude Code. Ask it to explore schemas and run queries.
-- Study the tool list: what does each tool expose? What are the input schemas? What's missing?
-- Test with real questions against the local data. Observe tool call sequences.
-- Read the server's source code to understand how it wraps Trino's API. This is how you learn MCP server design without building one.
+**Session 1 — Concepts (1h):**
+- Talk through MCP with Claude Code: what is a server, client, tool, resource, prompt?
+- Trace one full tool call in flight: model → client → server → response.
+- Exit: can draw the Lorekeeper architecture from memory and explain each hop.
 
-**Done when:** From an AI client, the question *"What tables are in the hive catalog?"* triggers the right tools and returns the right answer. *"Show me 10 orders"* returns data. Destructive SQL is rejected.
+**Session 2 — Environment check (1h):**
+- Confirm Trino reachable: `curl localhost:8081/v1/info`.
+- Confirm Ollama: `ollama run qwen2.5:14b` responds.
+- Confirm Podman GPU: `podman run --device nvidia.com/gpu=all nvidia/cuda nvidia-smi`.
+- Exit: all three green.
 
-## Phase 2 — Deploy and learn OpenMetadata MCP (Week 5–6)
+**Session 3 — Tool use mental model (1h):**
+- Ask Claude Code to show what a raw MCP tool call JSON looks like.
+- Ask: how does a model decide to call a tool vs answer directly?
+- Read the `alaturqua/mcp-trino-python` README together. Identify the tool list.
+- Exit: can name three Trino MCP tools and their purpose without looking.
 
-**Goal:** Metadata discovery via MCP, so the agent finds tables by meaning not just name.
+**Done when:** Can explain MCP in plain language, stack is confirmed, and you've seen a tool call schema.
 
-- Run OpenMetadata locally via Podman compose.
-- Ingest the local Trino catalog into OpenMetadata.
-- Add descriptions and tags to tables so search has something to work with.
-- Evaluate OpenMetadata's built-in MCP server vs `mcp-server-openmetadata` (PyPI). Pick one.
-- Connect both MCP servers to a single AI client. Test the end-to-end loop: discover a table by description in OpenMetadata, then query it in Trino.
-- Read the OpenMetadata MCP server's tool list. Understand what metadata it exposes.
+---
 
-**Done when:** From an AI client, asking *"Find a table about customer orders and show me 5 rows"* triggers metadata search then a Trino query.
+## Phase 1 — Trino MCP live (Weeks 2–3)
 
-## Phase 3 — Lorekeeper agent (Week 7–9)
+**Goal:** `alaturqua/mcp-trino-python` running against local Trino, with an AI client querying it.
 
-**Goal:** A standalone agent with a real system prompt and a CLI.
+**Session 4 — Install and configure (1h):**
+- `pip install mcp-trino-python` (or clone + install editable).
+- Write `trino_mcp_config.json` pointing at `localhost:8081`.
+- Start the server, confirm it starts without error.
+- Exit: server process running.
 
-- Write `prompts/lorekeeper-system.md`. Focus: discovery before SQL, partition awareness, CTE style, assumptions, clarifying questions.
-- Build `agent/runtime.py` — the agent loop that connects to both MCP servers.
-- Build `agent/cli.py` — `lorekeeper "which customers have pending shipments?"`
-- Build `agent/models.py` with Anthropic backend first, then Ollama backend.
-- Build the evaluation harness in `evals/`. Run after every prompt change.
+**Session 5 — Connect to Claude Code (1h):**
+- Add the Trino MCP server to Claude Code's MCP config (`.claude/mcp.json`).
+- Ask: *"What catalogs are available?"* — watch the tool call in the log.
+- Exit: tool call visible, answer returned.
 
-**Done when:** `lorekeeper "<question>"` produces correct answers for at least 15 of 20 benchmark questions on Claude, 10 of 20 on local Qwen.
+**Session 6 — Schema exploration (1h):**
+- Ask: *"What tables are in the hive catalog?"* — observe the tool sequence.
+- Ask: *"Describe the orders table."*
+- Note which tools were called and in what order. Write it down.
+- Exit: schema exploration working end-to-end.
 
-## Phase 4 — Agent composition (Week 10–12)
+**Session 7 — Data queries (1h):**
+- Ask: *"Show me 10 orders."*
+- Ask: *"What's the total order value by customer?"*
+- Try a destructive query — confirm it is rejected.
+- Exit: SELECT works, DDL/DML blocked.
 
-**Goal:** Lorekeeper callable by another agent.
+**Session 8 — Source reading (1h):**
+- Read the server's source with Claude Code. Focus: how is a tool defined? How does it call Trino's REST API? How is the response mapped back to MCP?
+- Exit: can explain how one tool (e.g. `run_query`) works end-to-end.
 
-- Study agent-to-agent communication patterns. Two main options: (a) Lorekeeper exposed as a tool to the parent agent, or (b) Lorekeeper wrapped as an MCP server itself.
-- Build a minimal Streamwright that drafts Airflow DAGs and delegates data questions to Lorekeeper.
-- Find or deploy an Airflow MCP server. Connect Streamwright to it.
-- Test: Streamwright asked to *"Build a DAG that copies orders to a daily summary table"* calls Lorekeeper to discover the schema, then composes the DAG.
+**Session 9 — Gaps and retrospective (1h):**
+- What tools are missing? What would Lorekeeper need that isn't there?
+- Write a short gap list in `.claude/docs/` (or a comment in the config).
+- Exit: gap list written.
+
+**Done when:** *"What tables are in the hive catalog?"* returns the right answer. *"Show me 10 orders"* returns data. Destructive SQL is rejected. You can explain how the server works.
+
+---
+
+## Phase 2 — OpenMetadata + both MCPs (Weeks 4–6)
+
+**Goal:** Metadata discovery via MCP so the agent finds tables by meaning, not just name. Both servers connected to one client.
+
+**Session 10–11 — Deploy OpenMetadata (2h across 2 days):**
+- Download the official Podman compose file for OpenMetadata 1.8+.
+- `podman compose up -d` — confirm UI reachable at `localhost:8585`.
+- Exit: OpenMetadata UI loads.
+
+**Session 12 — Ingest Trino catalog (1h):**
+- Configure a Trino connector in OpenMetadata UI.
+- Run ingestion — confirm tables appear in the catalog.
+- Exit: at least one table visible in OpenMetadata with schema.
+
+**Session 13 — Enrich metadata (1h):**
+- Add descriptions to 3–5 tables.
+- Add tags (e.g. `orders`, `customers`).
+- This is what makes semantic search work later.
+- Exit: tables have descriptions and tags.
+
+**Session 14 — Enable and connect built-in MCP server (1h):**
+- Enable OpenMetadata's built-in MCP server in its config.
+- Add it to Claude Code's MCP config alongside the Trino server.
+- Ask: *"What tables exist about orders?"* — watch which server is called.
+- Exit: two MCP servers visible in Claude Code.
+
+**Session 15 — End-to-end loop (1h):**
+- Ask: *"Find a table about customer orders and show me 5 rows."*
+- Observe: OpenMetadata search → table name → Trino query.
+- This is the Lorekeeper core loop, manually triggered.
+- Exit: full loop works at least once.
+
+**Session 16 — OpenMetadata MCP source reading (1h):**
+- Read the built-in server's tool list and schemas.
+- Note: what metadata does it expose? What's missing for Lorekeeper?
+- Exit: tool list documented, gaps noted.
+
+**Done when:** From an AI client, asking *"Find a table about customer orders and show me 5 rows"* triggers metadata search then a Trino query — two servers cooperating.
+
+---
+
+## Phase 3 — Lorekeeper agent (Weeks 7–10)
+
+**Goal:** A standalone agent with a real system prompt and a working CLI.
+
+Claude Code writes the boilerplate; your job is to shape the prompt, test the outputs, and tune.
+
+**Week 7 — System prompt and skeleton (4 sessions):**
+- Session 17: Draft `prompts/lorekeeper-system.md` together. Key behaviors: discovery before SQL, partition awareness, CTE style, clarifying questions, stating assumptions.
+- Session 18: Claude Code scaffolds `pyproject.toml`, `agent/cli.py` entrypoint, `agent/models.py` with Anthropic backend.
+- Session 19: Wire the CLI to both MCP servers. `lorekeeper "list tables"` works.
+- Session 20: First real question end-to-end. Fix what breaks.
+
+**Week 8 — Eval harness (3 sessions):**
+- Session 21: Write `evals/questions.yaml` — 20 benchmark questions covering schema discovery, aggregation, filtering, ambiguity.
+- Session 22: Claude Code builds `evals/run_eval.py`.
+- Session 23: Run baseline eval. Score it. Fix the most common failure mode.
+
+**Week 9 — Tuning (3 sessions):**
+- Session 24–26: Iterate on the system prompt based on eval results. Run eval after each change. Target: 15/20 on Claude.
+
+**Week 10 — Ollama backend (2 sessions):**
+- Session 27: Add Ollama backend to `agent/models.py`. Switch to `qwen2.5:14b`.
+- Session 28: Run eval on Qwen. Target: 10/20. Document failure modes.
+
+**Done when:** `lorekeeper "<question>"` produces correct answers for ≥15/20 on Claude, ≥10/20 on local Qwen.
+
+---
+
+## Phase 4 — Agent composition (Weeks 11–13)
+
+**Goal:** Lorekeeper callable by another agent. Validate the specialist pattern.
+
+- Session 29: Study agent-to-agent patterns with Claude Code. Choose: (a) Lorekeeper as a tool exposed to a parent agent, or (b) Lorekeeper wrapped as an MCP server.
+- Sessions 30–32: Build a minimal Streamwright agent that drafts Airflow DAGs and delegates data questions to Lorekeeper.
+- Session 33: Find or configure an Airflow MCP server.
+- Session 34–35: Test: *"Build a DAG that copies orders to a daily summary table"* — Streamwright calls Lorekeeper for schema, then composes the DAG.
 
 **Done when:** The composition works for at least one realistic example. Lorekeeper was reused unchanged from Phase 3.
 
+---
+
 ## Phase 5 — Production hardening (Ongoing)
 
+Pick one item per sprint based on what's actually painful:
+
 - Authentication on MCP servers
-- Observability: structured logging of every tool call
+- Structured logging of every tool call
 - Cost tracking for API models
 - PII detection and masking
 - Eval expansion to 50+ questions
-- Extend or fork MCP servers if tools are missing or insufficient
+- Fork or extend MCP servers where tools are missing
 
-## Time budget
+---
 
-~1 hour focused per day. Working Lorekeeper by week 9.
+## Session rhythm
+
+Each 1-hour session should follow this pattern:
+1. **5 min:** State what you're trying to accomplish and where you left off.
+2. **45 min:** Hands-on work with Claude Code — configure, test, explore, ask questions.
+3. **10 min:** Write down what you learned or what broke. Update the gap list if needed.
+
+Avoid starting sessions with reading. Start with doing; reading happens when you hit something you don't understand.
+
+## Time summary
+
+| Phase | Sessions | Calendar weeks |
+|-------|----------|----------------|
+| 0 — Ground | 3 | 1 |
+| 1 — Trino MCP | 6 | 2–3 |
+| 2 — OpenMetadata | 7 | 4–6 |
+| 3 — Lorekeeper agent | 12 | 7–10 |
+| 4 — Composition | 7 | 11–13 |
+
+Working Lorekeeper by **week 10**. Agent composition complete by **week 13**.

@@ -19,8 +19,8 @@ See @.claude/docs/03-learning-path.md for the full plan.
 
 ## MCP servers (external, not built by us)
 
-- **Trino**: `txn2/mcp-trino` (Go binary) or `alaturqua/mcp-trino-python` (Python)
-- **OpenMetadata**: built-in MCP server (shipped with OpenMetadata 1.8+) or `mcp-server-openmetadata` (PyPI)
+- **Trino**: `alaturqua/mcp-trino-python` — Python, readable source, fits the stack
+- **OpenMetadata**: built-in MCP server shipped with OpenMetadata 1.8+ — zero extra install
 
 ## Key commands
 
