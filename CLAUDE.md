@@ -19,8 +19,8 @@ See @.claude/docs/03-learning-path.md for the full plan.
 
 ## MCP servers (external, not built by us)
 
+- **OpenMetadata**: built-in MCP server, installed by default in OpenMetadata 1.12.x — zero extra install
 - **Trino**: `alaturqua/mcp-trino-python` — Python, readable source, fits the stack
-- **OpenMetadata**: built-in MCP server shipped with OpenMetadata 1.8+ — zero extra install
 
 ## Key commands
 

@@ -10,8 +10,24 @@ Reference reading: *AI Agents with MCP* by Kyle Stratis (read alongside phases, 
 
 ## MCP server choices (committed, not under evaluation)
 
+- **OpenMetadata:** built-in MCP server, installed by default in OpenMetadata 1.12.x — zero extra install, officially maintained. Confirmed in [1.12.x docs](https://docs.open-metadata.org/v1.12.x/how-to-guides/mcp).
 - **Trino:** `alaturqua/mcp-trino-python` — Python source is readable; fits the stack; no Go toolchain.
-- **OpenMetadata:** built-in MCP server shipped with OpenMetadata 1.8+ — zero extra install, officially maintained.
+
+OpenMetadata comes first because its MCP server is already part of the product — no separate package to install or maintain.
+
+## Local model selection (per machine)
+
+The Ollama backend model is configured via `.env`:
+
+```
+# GPU laptop (RTX 3070)
+LOREKEEPER_OLLAMA_MODEL=qwen2.5:14b
+
+# Work laptop (CPU-only, 32GB RAM)
+LOREKEEPER_OLLAMA_MODEL=qwen2.5:7b
+```
+
+`agent/models.py` reads this at startup. The model affects eval scores, so targets differ per setup — don't compare scores across machines.
 
 ---
 
@@ -33,78 +49,81 @@ Reference reading: *AI Agents with MCP* by Kyle Stratis (read alongside phases, 
 **Session 3 — Tool use mental model (1h):**
 - Ask Claude Code to show what a raw MCP tool call JSON looks like.
 - Ask: how does a model decide to call a tool vs answer directly?
-- Read the `alaturqua/mcp-trino-python` README together. Identify the tool list.
-- Exit: can name three Trino MCP tools and their purpose without looking.
+- Read the OpenMetadata MCP docs together. Identify the tool list.
+- Exit: can name three OpenMetadata MCP tools and their purpose without looking.
 
 **Done when:** Can explain MCP in plain language, stack is confirmed, and you've seen a tool call schema.
 
 ---
 
-## Phase 1 — Trino MCP live (Weeks 2–3)
+## Phase 1 — OpenMetadata MCP live (Weeks 2–4)
 
-**Goal:** `alaturqua/mcp-trino-python` running against local Trino, with an AI client querying it.
+**Goal:** OpenMetadata 1.12.18 deployed with its built-in MCP server connected to an AI client. Trino catalog ingested and enriched so metadata search has something to work with.
 
-**Session 4 — Install and configure (1h):**
-- `pip install mcp-trino-python` (or clone + install editable).
-- Write `trino_mcp_config.json` pointing at `localhost:8081`.
-- Start the server, confirm it starts without error.
-- Exit: server process running.
+**Session 4–5 — Deploy OpenMetadata (2h across 2 days):**
+- Download the official Podman compose file for OpenMetadata 1.12.x.
+- `podman compose up -d` — confirm UI reachable at `localhost:8585`.
+- Exit: OpenMetadata UI loads, services healthy.
 
-**Session 5 — Connect to Claude Code (1h):**
-- Add the Trino MCP server to Claude Code's MCP config (`.claude/mcp.json`).
-- Ask: *"What catalogs are available?"* — watch the tool call in the log.
+**Session 6 — Connect built-in MCP to Claude Code (1h):**
+- The MCP server is installed by default — locate it in the OpenMetadata app settings and enable it.
+- Add it to Claude Code's MCP config (`.claude/mcp.json`).
+- Ask: *"What entities are available?"* — watch the tool call in the log.
 - Exit: tool call visible, answer returned.
 
-**Session 6 — Schema exploration (1h):**
-- Ask: *"What tables are in the hive catalog?"* — observe the tool sequence.
-- Ask: *"Describe the orders table."*
-- Note which tools were called and in what order. Write it down.
-- Exit: schema exploration working end-to-end.
-
-**Session 7 — Data queries (1h):**
-- Ask: *"Show me 10 orders."*
-- Ask: *"What's the total order value by customer?"*
-- Try a destructive query — confirm it is rejected.
-- Exit: SELECT works, DDL/DML blocked.
-
-**Session 8 — Source reading (1h):**
-- Read the server's source with Claude Code. Focus: how is a tool defined? How does it call Trino's REST API? How is the response mapped back to MCP?
-- Exit: can explain how one tool (e.g. `run_query`) works end-to-end.
-
-**Session 9 — Gaps and retrospective (1h):**
-- What tools are missing? What would Lorekeeper need that isn't there?
-- Write a short gap list in `.claude/docs/` (or a comment in the config).
-- Exit: gap list written.
-
-**Done when:** *"What tables are in the hive catalog?"* returns the right answer. *"Show me 10 orders"* returns data. Destructive SQL is rejected. You can explain how the server works.
-
----
-
-## Phase 2 — OpenMetadata + both MCPs (Weeks 4–6)
-
-**Goal:** Metadata discovery via MCP so the agent finds tables by meaning, not just name. Both servers connected to one client.
-
-**Session 10–11 — Deploy OpenMetadata (2h across 2 days):**
-- Download the official Podman compose file for OpenMetadata 1.8+.
-- `podman compose up -d` — confirm UI reachable at `localhost:8585`.
-- Exit: OpenMetadata UI loads.
-
-**Session 12 — Ingest Trino catalog (1h):**
+**Session 7 — Ingest Trino catalog (1h):**
 - Configure a Trino connector in OpenMetadata UI.
 - Run ingestion — confirm tables appear in the catalog.
 - Exit: at least one table visible in OpenMetadata with schema.
 
-**Session 13 — Enrich metadata (1h):**
+**Session 8 — Enrich metadata (1h):**
 - Add descriptions to 3–5 tables.
 - Add tags (e.g. `orders`, `customers`).
 - This is what makes semantic search work later.
 - Exit: tables have descriptions and tags.
 
-**Session 14 — Enable and connect built-in MCP server (1h):**
-- Enable OpenMetadata's built-in MCP server in its config.
-- Add it to Claude Code's MCP config alongside the Trino server.
-- Ask: *"What tables exist about orders?"* — watch which server is called.
-- Exit: two MCP servers visible in Claude Code.
+**Session 9 — Explore via MCP (1h):**
+- Ask: *"Find tables related to customer orders."*
+- Ask: *"What does the orders table contain?"*
+- Note which tools were called and in what order. Write it down.
+- Exit: metadata search working end-to-end via MCP.
+
+**Session 10 — Tool list and gaps (1h):**
+- Read the built-in server's full tool list with Claude Code.
+- What metadata does it expose? What's missing for Lorekeeper?
+- Write a gap list in `.claude/docs/`.
+- Exit: tool list documented.
+
+**Done when:** From an AI client, *"Find tables related to customer orders"* returns meaningful results from OpenMetadata via MCP tool calls.
+
+---
+
+## Phase 2 — Trino MCP + both servers live (Weeks 5–6)
+
+**Goal:** `alaturqua/mcp-trino-python` running against local Trino, both MCP servers connected to one client, end-to-end loop working.
+
+**Session 11 — Install and configure Trino MCP (1h):**
+- `pip install mcp-trino-python` (or clone + install editable).
+- Write `trino_mcp_config.json` pointing at `localhost:8081`.
+- Start the server, confirm it starts without error.
+- Exit: server process running.
+
+**Session 12 — Connect to Claude Code (1h):**
+- Add the Trino MCP server to Claude Code's MCP config alongside OpenMetadata.
+- Ask: *"What catalogs are available?"* — watch the tool call in the log.
+- Exit: both MCP servers visible, tool calls distinguishable.
+
+**Session 13 — Schema exploration (1h):**
+- Ask: *"What tables are in the hive catalog?"* — observe the tool sequence.
+- Ask: *"Describe the orders table."*
+- Note which server was called for each question.
+- Exit: schema exploration working end-to-end.
+
+**Session 14 — Data queries and safety check (1h):**
+- Ask: *"Show me 10 orders."*
+- Ask: *"What's the total order value by customer?"*
+- Try a destructive query — confirm it is rejected.
+- Exit: SELECT works, DDL/DML blocked.
 
 **Session 15 — End-to-end loop (1h):**
 - Ask: *"Find a table about customer orders and show me 5 rows."*
@@ -112,12 +131,12 @@ Reference reading: *AI Agents with MCP* by Kyle Stratis (read alongside phases, 
 - This is the Lorekeeper core loop, manually triggered.
 - Exit: full loop works at least once.
 
-**Session 16 — OpenMetadata MCP source reading (1h):**
-- Read the built-in server's tool list and schemas.
-- Note: what metadata does it expose? What's missing for Lorekeeper?
-- Exit: tool list documented, gaps noted.
+**Session 16 — Trino MCP source reading + retrospective (1h):**
+- Read the server's source with Claude Code. Focus: how is a tool defined? How does it call Trino's REST API?
+- Update the gap list with anything discovered.
+- Exit: can explain how `run_query` works end-to-end.
 
-**Done when:** From an AI client, asking *"Find a table about customer orders and show me 5 rows"* triggers metadata search then a Trino query — two servers cooperating.
+**Done when:** *"Find a table about customer orders and show me 5 rows"* triggers OpenMetadata search then a Trino query — two servers cooperating.
 
 ---
 
@@ -142,10 +161,10 @@ Claude Code writes the boilerplate; your job is to shape the prompt, test the ou
 - Session 24–26: Iterate on the system prompt based on eval results. Run eval after each change. Target: 15/20 on Claude.
 
 **Week 10 — Ollama backend (2 sessions):**
-- Session 27: Add Ollama backend to `agent/models.py`. Switch to `qwen2.5:14b`.
-- Session 28: Run eval on Qwen. Target: 10/20. Document failure modes.
+- Session 27: Add Ollama backend to `agent/models.py`. Read model from `LOREKEEPER_OLLAMA_MODEL` env var (default: `qwen2.5:14b`). Set per machine in `.env`.
+- Session 28: Run eval on Qwen. Targets: ≥10/20 on `qwen2.5:14b` (GPU laptop), ≥7/20 on `qwen2.5:7b` (work laptop). Document failure modes.
 
-**Done when:** `lorekeeper "<question>"` produces correct answers for ≥15/20 on Claude, ≥10/20 on local Qwen.
+**Done when:** `lorekeeper "<question>"` produces correct answers for ≥15/20 on Claude, ≥10/20 on Qwen 14B, ≥7/20 on Qwen 7B.
 
 ---
 
@@ -189,8 +208,8 @@ Avoid starting sessions with reading. Start with doing; reading happens when you
 | Phase | Sessions | Calendar weeks |
 |-------|----------|----------------|
 | 0 — Ground | 3 | 1 |
-| 1 — Trino MCP | 6 | 2–3 |
-| 2 — OpenMetadata | 7 | 4–6 |
+| 1 — OpenMetadata MCP | 7 | 2–4 |
+| 2 — Trino MCP + both | 6 | 5–6 |
 | 3 — Lorekeeper agent | 12 | 7–10 |
 | 4 — Composition | 7 | 11–13 |
 
