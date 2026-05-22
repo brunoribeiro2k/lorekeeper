@@ -20,10 +20,10 @@ OpenMetadata comes first because its MCP server is already part of the product �
 The Ollama backend model is configured via `.env`:
 
 ```
-# GPU laptop (RTX 3070)
+# Primary laptop (GPU — RTX 3070)
 LOREKEEPER_OLLAMA_MODEL=qwen2.5:14b
 
-# Work laptop (CPU-only, 32GB RAM)
+# Secondary laptop (RAM — CPU-only, 32 GB)
 LOREKEEPER_OLLAMA_MODEL=qwen2.5:7b
 ```
 
@@ -42,7 +42,7 @@ LOREKEEPER_OLLAMA_MODEL=qwen2.5:7b
 
 **Session 2 — Environment check + OpenMetadata deploy (1–2h):**
 - Confirm Trino reachable: `curl localhost:8081/v1/info`.
-- Confirm Ollama: model from `LOREKEEPER_OLLAMA_MODEL` responds (`qwen2.5:14b` GPU laptop, `qwen2.5:7b` work laptop).
+- Confirm Ollama: model from `LOREKEEPER_OLLAMA_MODEL` responds (`qwen2.5:14b` primary laptop, `qwen2.5:7b` secondary laptop).
 - Confirm Docker: `docker compose version`; on GPU laptop also confirm GPU passthrough with `docker run --gpus all nvidia/cuda nvidia-smi`.
 - Download the official compose file for OpenMetadata 1.12.x and bring it up — `docker compose up -d`, UI at `localhost:8585`.
 - Exit: Trino, Ollama, container runtime, and OpenMetadata UI all green.
@@ -158,7 +158,7 @@ Claude Code writes the boilerplate; your job is to shape the prompt, test the ou
 
 **Week 9 — Ollama backend (2 sessions):**
 - Session 25: Add Ollama backend to `agent/models.py`. Read model from `LOREKEEPER_OLLAMA_MODEL` env var (default: `qwen2.5:14b`). Set per machine in `.env`.
-- Session 26: Run eval on Qwen. Targets: ≥10/20 on `qwen2.5:14b` (GPU laptop), ≥7/20 on `qwen2.5:7b` (work laptop). Document failure modes.
+- Session 26: Run eval on Qwen. Targets: ≥10/20 on `qwen2.5:14b` (primary laptop), ≥7/20 on `qwen2.5:7b` (secondary laptop). Document failure modes.
 
 **Done when:** `lorekeeper "<question>"` produces correct answers for ≥15/20 on Claude, ≥10/20 on Qwen 14B, ≥7/20 on Qwen 7B.
 

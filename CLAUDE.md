@@ -14,9 +14,9 @@ See @.claude/docs/03-learning-path.md for the full plan.
 - Trino at localhost:8081 (hive + iceberg catalogs)
 - OpenMetadata 1.12.x at localhost:8585 (compose stack)
 - Ollama for local inference; model selected per machine via `LOREKEEPER_OLLAMA_MODEL`
-- Container runtime: Docker on both laptops (GPU passthrough on the GPU laptop)
-- GPU laptop: Ubuntu 26.04, RTX 3070 (8 GB VRAM), 16 GB RAM, runs `qwen2.5:14b`
-- Work laptop: Ubuntu 24.04, CPU-only, 32 GB RAM, runs `qwen2.5:7b`
+- Container runtime: Docker on both laptops (GPU passthrough on the primary)
+- Primary laptop (GPU): Ubuntu 26.04, RTX 3070 (8 GB VRAM), 16 GB RAM, runs `qwen2.5:14b`
+- Secondary laptop (RAM): Ubuntu 24.04, CPU-only, 32 GB RAM, runs `qwen2.5:7b`
 
 ## MCP servers (external, not built by us)
 

@@ -18,21 +18,15 @@ We use existing MCP servers, not custom-built ones. The agent connects to them a
 
 ### Trino MCP server
 
-**Primary option:** `txn2/mcp-trino` — Go binary, part of a composable data platform suite. Supports stdio and HTTP transports. Read-only by default (blocks DDL/DML). Also usable as a CLI.
-
-**Alternative:** `alaturqua/mcp-trino-python` — Python implementation. Easier to read and extend. Supports stdio, streamable HTTP, and SSE transports.
+`alaturqua/mcp-trino-python` — Python implementation, readable source, fits the stack. Supports stdio, streamable HTTP, and SSE transports. Run via `uvx` (no install needed). Config via env vars: `TRINO_HOST`, `TRINO_PORT`, `TRINO_USER`, `TRINO_CATALOG`.
 
 Expected tools: `execute_query`, `list_catalogs`, `list_schemas`, `list_tables`, `get_table_schema`, `explain_query`.
 
-Configuration via environment variables: `TRINO_HOST`, `TRINO_PORT`, `TRINO_USER`, `TRINO_CATALOG`, `TRINO_SCHEMA`.
-
 ### OpenMetadata MCP server
 
-**Primary option:** OpenMetadata's built-in MCP server (shipped with v1.8+). Fully integrated with the authorization engine, semantic search, lineage, and governance. Requires OpenMetadata to be running.
+OpenMetadata's built-in MCP server (shipped with v1.8+, confirmed working in 1.12.x). Fully integrated with the authorization engine, semantic search, lineage, and governance. Requires OpenMetadata to be running.
 
-**Alternative:** `mcp-server-openmetadata` (PyPI, by yangkyeongmo). Wraps the REST API with modular API group selection. Lighter weight, easier to test in isolation.
-
-**Known issue:** OpenMetadata's built-in MCP server had a compatibility issue with MCP clients using the 2025-11-25 protocol spec (Claude Code 2.1.74+). Fixed in MCP Java SDK 0.18.0+. Check the OpenMetadata release version before connecting.
+Endpoint: `POST $OPENMETADATA_URL/mcp` — stateless HTTP/SSE transport. Auth via `Authorization: Bearer <token>` header. Config lives in `.mcp.json` (gitignored). No separate process to spawn.
 
 Expected capabilities: table search by keyword, table metadata with column descriptions, data lineage, tags, ownership.
 
