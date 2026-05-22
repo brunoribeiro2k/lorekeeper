@@ -12,10 +12,11 @@ See @.claude/docs/03-learning-path.md for the full plan.
 
 - Python 3.13.13 (pyenv + venv)
 - Trino at localhost:8081 (hive + iceberg catalogs)
-- OpenMetadata (to be deployed, Podman compose)
-- Ollama with qwen2.5:14b for local inference
-- Podman 5.7 (rootless, GPU passthrough via CDI)
-- Ubuntu 26.04, RTX 3070 (8 GB VRAM), 16 GB RAM
+- OpenMetadata 1.12.x at localhost:8585 (compose stack)
+- Ollama for local inference; model selected per machine via `LOREKEEPER_OLLAMA_MODEL`
+- Container runtime: Docker on both laptops (GPU passthrough on the GPU laptop)
+- GPU laptop: Ubuntu 26.04, RTX 3070 (8 GB VRAM), 16 GB RAM, runs `qwen2.5:14b`
+- Work laptop: Ubuntu 24.04, CPU-only, 32 GB RAM, runs `qwen2.5:7b`
 
 ## MCP servers (external, not built by us)
 
@@ -26,8 +27,8 @@ See @.claude/docs/03-learning-path.md for the full plan.
 
 ```bash
 source .venv/bin/activate
-ollama run qwen2.5:14b          # local model
-podman compose up -d             # start services
+ollama run "$LOREKEEPER_OLLAMA_MODEL"   # local model (set in .env)
+docker compose up -d                     # start services
 ```
 
 ## Reference docs

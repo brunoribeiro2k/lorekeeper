@@ -8,5 +8,5 @@
 - Tests in `tests/`, mirroring the package layout.
 - Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
 - Secrets in `.env`, loaded via `python-dotenv` or `pydantic-settings`. Never logged.
-- Package names lowercase: `lorekeeper`, `trino_mcp`, `openmetadata_mcp`.
+- Package names lowercase: `lorekeeper`.
 - Tool functions follow `verb_noun` style: `list_tables`, `describe_table`, `run_query`.
