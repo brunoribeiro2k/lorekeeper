@@ -44,10 +44,17 @@ docker run --rm --gpus all nvidia/cuda:12.3.0-base-ubuntu22.04 nvidia-smi
 - Catalogs: `hive`, `iceberg` (see `05-data-model.md`)
 - Compose files: `~/projects/brunoribeiro2k/local-env/trino-local/`
 
+### Trino MCP server
+
+- `alaturqua/mcp-trino-python`, managed by `local-env/trino-local`
+- HTTP at `http://localhost:8082/mcp`
+- Registered user-scoped: `claude mcp add --transport http --scope user trino http://localhost:8082/mcp`
+
 ### OpenMetadata
 
 - At `http://localhost:8585`
-- Built-in MCP server at `http://localhost:8585/mcp` (stateless HTTP/SSE, confirmed Phase 1 Session 4)
+- Built-in MCP server at `http://localhost:8585/mcp` (stateless HTTP, confirmed Phase 1 Session 4)
+- Registered user-scoped: `claude mcp add --transport http --scope user openmetadata http://localhost:8585/mcp --header "Authorization: Bearer $OM_TOKEN"`
 - Compose files: `~/projects/brunoribeiro2k/local-env/open-metadata-local/`
 
 ### Not installed yet

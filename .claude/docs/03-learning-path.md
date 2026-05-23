@@ -8,10 +8,12 @@ The interesting work is: **the agent loop, the system prompt, and the evals.**
 
 Each phase produces something you can run and observe. Claude Code handles boilerplate; the focus is on shaping agent behaviour and verifying it works.
 
-## MCP servers (done, not under evaluation)
+## MCP servers (prerequisites — not managed here)
 
-- **OpenMetadata:** built-in, registered via `claude mcp add`. Tools: `search_metadata`, `patch_entity`, `get_entity_details`, etc.
-- **Trino:** `alaturqua/mcp-trino-python` — install and register once, then treat as infrastructure.
+Both are registered at user scope in Claude Code. They must be running before any session.
+
+- **OpenMetadata:** built-in MCP at `http://localhost:8585/mcp`. Registered user-scoped. Tools: `search_metadata`, `patch_entity`, `get_entity_details`, etc.
+- **Trino:** `alaturqua/mcp-trino-python`, managed by `local-env/trino-local`. HTTP at `http://localhost:8082/mcp`. Registered user-scoped.
 
 ## Local model (per machine)
 
@@ -27,36 +29,29 @@ Set in `.env`. `agent/models.py` reads it at startup.
 
 ---
 
-## Current state (as of Phase 1 complete)
+## Current state (as of Phase 2 complete)
 
-- ✅ OpenMetadata MCP connected (`claude mcp add` registered, tools visible)
+- ✅ OpenMetadata MCP connected, registered user-scoped
 - ✅ Trino catalog ingested into OpenMetadata (8 tables across hive + iceberg)
 - ✅ Metadata enriched (descriptions + Domain tags on all 8 tables)
 - ✅ `search_metadata("customer orders")` returns correct results via MCP
-- ⬜ Trino MCP server not yet installed
+- ✅ Trino MCP running (`local-env/trino-local`), registered user-scoped at `localhost:8082/mcp`
+- ✅ `show_catalogs` confirmed via MCP: hive, iceberg, system
+- ⬜ Full loop (metadata → SQL → answer) not yet verified end-to-end
 - ⬜ Agent loop not yet built
 
 ---
 
-## Phase 2 — Trino MCP wired (1–2 sessions)
+## Phase 2 — Trino MCP wired ✅
 
-**Goal:** Trino MCP running, registered alongside OpenMetadata, end-to-end loop manually confirmed.
+**Done.** Both servers connected, user-scoped, visible in `claude mcp list`.
 
-**Session 8 — Install and register Trino MCP (1h):**
-```bash
-pip install mcp-trino-python
-claude mcp add trino --transport http ...   # or stdio, check the package docs
-```
-- Ask: *"What catalogs are available?"* — confirm tool call hits Trino.
-- Ask: *"Show me 5 rows from hive.sales.orders."* — confirm data comes back.
-- Try a destructive query — confirm it is rejected.
-- Exit: SELECT works, DDL blocked, both servers visible in `claude mcp list`.
-
-**Session 9 — Full loop (1h):**
+**Session 9 — Full loop verification (1h):**
 - Ask: *"Find a table about customer orders and show me 5 rows."*
 - Observe the sequence: `search_metadata` → table FQN → Trino query → answer.
+- Try a destructive query — confirm it is rejected by the MCP server.
 - This is the Lorekeeper core loop, manually triggered via Claude Code.
-- Exit: full loop works at least once, both MCP tools called in one turn.
+- Exit: full loop works at least once, both MCP tools called in one turn, DDL blocked.
 
 **Done when:** One question triggers both MCP servers cooperating end-to-end.
 
