@@ -18,8 +18,8 @@ from rich.table import Table
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lorekeeper.contracts import EvalQuestion, LorekeeperResponse
-from lorekeeper.runtime import AgentRuntime
+from lorekeeper.agent.runtime import AgentRuntime
+from lorekeeper.core.contracts import EvalQuestion, LorekeeperResponse
 
 console = Console()
 

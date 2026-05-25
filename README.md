@@ -26,9 +26,10 @@ lorekeeper:
                ▼
 ┌──────────────────────────────────────────────────────┐
 │  Lorekeeper (this repo)                              │
-│  agent/runtime.py  →  agent loop + MCP client       │
-│  agent/models.py   →  Anthropic or Ollama backend   │
-│  agent/cli.py      →  lorekeeper "<question>"       │
+│  src/lorekeeper/agent/      →  agent loop           │
+│  src/lorekeeper/mcp/        →  MCP client boundary  │
+│  src/lorekeeper/model/      →  model backend API    │
+│  src/lorekeeper/cli.py      →  lorekeeper "<q>"     │
 └──────────┬───────────────────┬───────────────────────┘
            │                   │
            ▼                   ▼
@@ -132,15 +133,15 @@ lorekeeper/
 ├── .env.example            # env var template
 ├── .python-version         # pinned to 3.13.13 (pyenv)
 │
-├── lorekeeper/             # Python package
-│   ├── __init__.py
-│   ├── config.py           # Settings loaded from env/.env
-│   ├── contracts.py        # Request/response/eval/trace contracts
-│   ├── mcp_client.py       # MCP server config + client protocols
-│   ├── models.py           # ModelBackend protocol + placeholder backend
-│   ├── runtime.py          # AgentRuntime skeleton
-│   ├── tracing.py          # JSONL trace recorder
-│   └── cli.py              # Typer CLI (entry point: lorekeeper)
+├── src/
+│   └── lorekeeper/         # Python package
+│       ├── __init__.py
+│       ├── cli.py          # Typer CLI (entry point: lorekeeper)
+│       ├── agent/          # Agent runtime and orchestration
+│       ├── core/           # Settings and public contracts
+│       ├── mcp/            # MCP server config + client protocols
+│       ├── model/          # ModelBackend protocol + placeholder backend
+│       └── observability/  # JSONL trace recorder
 │
 ├── prompts/
 │   └── lorekeeper-system.md  # System prompt (iterated, versioned)

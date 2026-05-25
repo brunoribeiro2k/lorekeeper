@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lorekeeper.config import Settings
-from lorekeeper.contracts import LorekeeperRequest, LorekeeperResponse, LorekeeperTrace
-from lorekeeper.mcp_client import McpClient
-from lorekeeper.models import Message, ModelBackend, NotConfiguredBackend
-from lorekeeper.tracing import TraceRecorder
+from lorekeeper.core.config import Settings
+from lorekeeper.core.contracts import LorekeeperRequest, LorekeeperResponse, LorekeeperTrace
+from lorekeeper.mcp.client import McpClient
+from lorekeeper.model.backend import Message, ModelBackend, NotConfiguredBackend
+from lorekeeper.observability.tracing import TraceRecorder
 
 
 class AgentRuntime:

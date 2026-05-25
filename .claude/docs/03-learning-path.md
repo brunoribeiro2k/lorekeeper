@@ -25,7 +25,7 @@ LOREKEEPER_OLLAMA_MODEL=qwen2.5:14b
 LOREKEEPER_OLLAMA_MODEL=qwen2.5:7b
 ```
 
-Set in `.env`. `agent/models.py` reads it at startup.
+Set in `.env`. `src/lorekeeper/model/backend.py` reads it at startup.
 
 ---
 
@@ -109,7 +109,14 @@ Claude Code scaffolds the code. Your job: shape agent behaviour, compare runs ag
 - Exit: the agent has a written contract and scoring rubric.
 
 **Session 12 — Scaffold + system prompt (1h):**
-- Claude Code generates: `pyproject.toml`, `agent/cli.py`, `agent/runtime.py`, `agent/models.py`.
+- Claude Code generates the `src/lorekeeper/` package skeleton:
+  - `cli.py`
+  - `agent/runtime.py`
+  - `core/config.py`
+  - `core/contracts.py`
+  - `mcp/client.py`
+  - `model/backend.py`
+  - `observability/tracing.py`
 - Draft `prompts/lorekeeper-system.md` together. Key behaviours:
   - Always search metadata before writing SQL
   - Use fully qualified table names (`catalog.schema.table`)
@@ -119,7 +126,7 @@ Claude Code scaffolds the code. Your job: shape agent behaviour, compare runs ag
 - Exit: `lorekeeper "list tables"` runs without crashing.
 
 **Session 13 — Wire MCP servers into the agent loop (1h):**
-- `agent/runtime.py` connects to both MCP servers and executes the tool call loop.
+- `src/lorekeeper/agent/runtime.py` connects to both MCP servers and executes the tool call loop.
 - The loop: receive question → call tools as needed → return answer.
 - Exit: `lorekeeper "find tables about orders"` calls `search_metadata` and returns results.
 
@@ -160,7 +167,7 @@ Claude Code scaffolds the code. Your job: shape agent behaviour, compare runs ag
 - Exit: score improved, at least one prompt change validated by eval.
 
 **Session 18 — Ollama backend (1h):**
-- Add Ollama backend to `agent/models.py`. Switch via `LOREKEEPER_OLLAMA_MODEL`.
+- Add Ollama backend to `src/lorekeeper/model/backend.py`. Switch via `LOREKEEPER_OLLAMA_MODEL`.
 - Run eval on Qwen. Targets: ≥10/20 on `qwen2.5:14b`, ≥7/20 on `qwen2.5:7b`.
 - Document failure modes specific to local models (tool call formatting, hallucinated FQNs, etc.).
 - Exit: both Claude and Ollama backends working, eval scores recorded.

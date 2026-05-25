@@ -6,7 +6,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from lorekeeper.contracts import LorekeeperTrace
+from lorekeeper.core.contracts import LorekeeperTrace
 
 
 class TraceRecorder:

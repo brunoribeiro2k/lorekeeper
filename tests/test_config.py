@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lorekeeper.config import Settings
-from lorekeeper.mcp_client import build_server_configs
+from lorekeeper.core.config import Settings
+from lorekeeper.mcp.client import build_server_configs
 
 
 def test_settings_defaults() -> None:

@@ -9,8 +9,8 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from lorekeeper.config import Settings
-from lorekeeper.runtime import AgentRuntime
+from lorekeeper.agent.runtime import AgentRuntime
+from lorekeeper.core.config import Settings
 
 app = typer.Typer(
     name="lorekeeper",

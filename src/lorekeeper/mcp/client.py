@@ -6,8 +6,8 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
-from lorekeeper.config import Settings
-from lorekeeper.models import ToolDefinition
+from lorekeeper.core.config import Settings
+from lorekeeper.model.backend import ToolDefinition
 
 
 class McpServerConfig(BaseModel):

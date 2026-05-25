@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lorekeeper.contracts import LorekeeperRequest, LorekeeperResponse, ToolCallTrace
+from lorekeeper.core.contracts import LorekeeperRequest, LorekeeperResponse, ToolCallTrace
 
 
 def test_request_generates_trace_id() -> None:

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from lorekeeper.config import Settings
-from lorekeeper.runtime import AgentRuntime
+from lorekeeper.agent.runtime import AgentRuntime
+from lorekeeper.core.config import Settings
 
 
 def test_load_system_prompt_fallback(tmp_path: Path) -> None:
