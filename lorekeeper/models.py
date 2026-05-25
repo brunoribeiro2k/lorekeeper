@@ -1,92 +1,70 @@
-"""Model backend protocol and concrete implementations (Anthropic + Ollama)."""
+"""Model backend interfaces used by the agent loop."""
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol
 
-import httpx
-from anthropic import Anthropic
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
-    """A single conversation turn."""
+    """A single conversation turn sent to a model backend."""
 
     role: str
     content: str | list[dict[str, Any]]
 
 
-@runtime_checkable
-class ModelBackend(Protocol):
-    """Common interface for model inference backends.
+class ToolDefinition(BaseModel):
+    """Tool metadata exposed to a model."""
 
-    Both AnthropicBackend and OllamaBackend implement this. Swapping backends
-    is a config change — the agent loop in runtime.py never knows which one it's using.
-    """
+    name: str
+    description: str = ""
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+
+
+class ModelTurn(BaseModel):
+    """A model response for one agent-loop turn."""
+
+    content: str = ""
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
+    stop_reason: str = "stop"
+
+
+class ModelBackend(Protocol):
+    """Common interface for Anthropic, Ollama, and test backends."""
+
+    name: str
+    model: str
 
     def complete(
         self,
+        *,
         system: str,
         messages: list[Message],
-        tools: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Run one completion turn and return the raw API response dict."""
+        tools: list[ToolDefinition],
+    ) -> ModelTurn:
+        """Run one model turn."""
         ...
 
 
-class AnthropicBackend:
-    """Anthropic API backend using the Messages API with tool use."""
+class NotConfiguredBackend:
+    """Placeholder backend used until a concrete model adapter is wired."""
 
-    def __init__(self, model: str = "claude-sonnet-4-6") -> None:
-        self.model = model
-        self._client = Anthropic()
-
-    def complete(
-        self,
-        system: str,
-        messages: list[Message],
-        tools: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Run one completion turn via the Anthropic API."""
-        response = self._client.messages.create(
-            model=self.model,
-            max_tokens=4096,
-            system=system,
-            messages=[m.model_dump() for m in messages],
-            tools=tools,  # type: ignore[arg-type]
-        )
-        return response.model_dump()
-
-
-class OllamaBackend:
-    """Local Ollama backend via its OpenAI-compatible /v1/chat/completions endpoint."""
-
-    def __init__(
-        self,
-        model: str = "qwen2.5:14b",
-        base_url: str = "http://localhost:11434",
-    ) -> None:
-        self.model = model
-        self.base_url = base_url
+    name = "not-configured"
+    model = "none"
 
     def complete(
         self,
+        *,
         system: str,
         messages: list[Message],
-        tools: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Run one completion turn via Ollama's OpenAI-compatible endpoint."""
-        payload = {
-            "model": self.model,
-            "messages": [{"role": "system", "content": system}]
-            + [m.model_dump() for m in messages],
-            "tools": tools,
-            "stream": False,
-        }
-        response = httpx.post(
-            f"{self.base_url}/v1/chat/completions",
-            json=payload,
-            timeout=120.0,
+        tools: list[ToolDefinition],
+    ) -> ModelTurn:
+        """Return a clear skeleton response instead of calling a live model."""
+        del system, messages, tools
+        return ModelTurn(
+            content=(
+                "Lorekeeper's project skeleton is ready. Wire a concrete model "
+                "backend and MCP clients to answer live data questions."
+            )
         )
-        response.raise_for_status()
-        return response.json()

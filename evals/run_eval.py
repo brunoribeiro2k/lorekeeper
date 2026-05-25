@@ -1,12 +1,12 @@
-"""Evaluation harness — run the Lorekeeper benchmark and print a results table.
+"""Evaluation harness skeleton for Lorekeeper.
 
 Usage:
     uv run python evals/run_eval.py
-    uv run python evals/run_eval.py --backend ollama
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import sys
 from pathlib import Path
@@ -18,82 +18,93 @@ from rich.table import Table
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lorekeeper.runtime import AgentResponse, AgentRuntime
+from lorekeeper.contracts import EvalQuestion, LorekeeperResponse
+from lorekeeper.runtime import AgentRuntime
 
 console = Console()
 
 
-def load_questions(path: Path) -> list[dict[str, Any]]:
+def load_questions(path: Path) -> list[EvalQuestion]:
     """Load benchmark questions from YAML."""
-    with path.open() as f:
-        data = yaml.safe_load(f)
-    return data.get("questions", [])
+    with path.open(encoding="utf-8") as handle:
+        data = yaml.safe_load(handle)
+    return [EvalQuestion(**item) for item in data.get("questions", [])]
 
 
-def score(response: AgentResponse | Exception, question: dict[str, Any]) -> tuple[bool, str]:
-    """Check whether a response satisfies the question's expected criteria."""
+def score(response: LorekeeperResponse | Exception, question: EvalQuestion) -> dict[str, str]:
+    """Score one response across the planned eval layers."""
     if isinstance(response, Exception):
-        return False, f"error: {response}"
+        reason = f"error: {response}"
+        return {
+            "tool": "fail",
+            "sql": "fail",
+            "execution": "fail",
+            "answer": reason,
+            "safety": "fail",
+        }
 
-    if question.get("expected_refusal"):
-        refused = "cannot" in response.answer.lower() or "blocked" in response.answer.lower()
-        return refused, "refused" if refused else "not refused"
+    sql_text = (response.sql or response.answer).upper()
+    expected_sql = all(fragment.upper() in sql_text for fragment in question.expected_sql_contains)
+    refused = response.status == "refused" or bool(response.refusal_reason)
+    clarified = response.status == "clarification_needed" or bool(response.clarification_question)
 
-    if question.get("expected_clarification"):
-        asked = "?" in response.answer
-        return asked, "asked" if asked else "did not ask"
-
-    if fragments := question.get("expected_sql_contains"):
-        sql = (response.sql or response.answer).upper()
-        for fragment in fragments:
-            if fragment.upper() not in sql:
-                return False, f"SQL missing: {fragment!r}"
-
-    return True, "ok"
+    return {
+        "tool": "pending" if question.expected_tool else "n/a",
+        "sql": "pass" if expected_sql else "fail",
+        "execution": "pending",
+        "answer": "pending",
+        "safety": _score_safety(question, refused, clarified),
+    }
 
 
-async def run_eval(backend: str = "anthropic") -> None:
-    """Run all benchmark questions and print a summary table."""
-    questions_path = Path(__file__).parent / "questions.yaml"
-    questions = load_questions(questions_path)
+def _score_safety(question: EvalQuestion, refused: bool, clarified: bool) -> str:
+    """Score refusal and clarification expectations."""
+    if question.expected_refusal:
+        return "pass" if refused else "fail"
+    if question.expected_clarification:
+        return "pass" if clarified else "fail"
+    return "n/a"
 
+
+async def run_eval() -> None:
+    """Run all benchmark questions and print layered skeleton scores."""
+    questions = load_questions(Path(__file__).parent / "questions.yaml")
     runtime = AgentRuntime()
-    results: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
 
-    console.print(f"\n[bold]Lorekeeper eval — backend: {backend}[/bold]\n")
-
-    for q in questions:
-        console.print(f"  [dim]{q['id']}[/dim] {q['question'][:70]}")
+    for question in questions:
         try:
-            response: AgentResponse | Exception = await runtime.answer(q["question"])
+            response: LorekeeperResponse | Exception = await runtime.answer(question.question)
         except Exception as exc:  # noqa: BLE001
             response = exc
+        rows.append({"id": question.id, **score(response, question)})
 
-        passed, reason = score(response, q)
-        results.append({"id": q["id"], "passed": passed, "reason": reason})
+    table = Table(title="Lorekeeper Eval Skeleton")
+    table.add_column("ID", style="dim")
+    table.add_column("Tool")
+    table.add_column("SQL")
+    table.add_column("Execution")
+    table.add_column("Answer")
+    table.add_column("Safety")
 
-    table = Table(title="\nResults", show_lines=False)
-    table.add_column("ID", style="dim", width=5)
-    table.add_column("Pass", width=6)
-    table.add_column("Reason")
-
-    for r in results:
-        status = "[green]PASS[/green]" if r["passed"] else "[red]FAIL[/red]"
-        table.add_row(r["id"], status, r["reason"])
+    for row in rows:
+        table.add_row(
+            row["id"],
+            row["tool"],
+            row["sql"],
+            row["execution"],
+            row["answer"],
+            row["safety"],
+        )
 
     console.print(table)
-
-    passed_count = sum(1 for r in results if r["passed"])
-    total = len(results)
-    pct = int(passed_count / total * 100) if total else 0
-    console.print(f"\n[bold]{passed_count}/{total}[/bold] passed ({pct}%)\n")
+    console.print(
+        "\n[dim]Pending layers become meaningful after live MCP clients and model "
+        "adapters are wired.[/dim]"
+    )
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backend", default="anthropic", choices=["anthropic", "ollama"])
-    args = parser.parse_args()
-
-    asyncio.run(run_eval(backend=args.backend))
+    parser.parse_args()
+    asyncio.run(run_eval())
