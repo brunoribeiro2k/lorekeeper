@@ -26,9 +26,10 @@ lorekeeper:
                ▼
 ┌──────────────────────────────────────────────────────┐
 │  Lorekeeper (this repo)                              │
-│  agent/runtime.py  →  agent loop + MCP client       │
-│  agent/models.py   →  Anthropic or Ollama backend   │
-│  agent/cli.py      →  lorekeeper "<question>"       │
+│  src/lorekeeper/agent/      →  agent loop           │
+│  src/lorekeeper/mcp/        →  MCP client boundary  │
+│  src/lorekeeper/model/      →  model backend API    │
+│  src/lorekeeper/cli.py      →  lorekeeper "<q>"     │
 └──────────┬───────────────────┬───────────────────────┘
            │                   │
            ▼                   ▼
@@ -89,16 +90,17 @@ cp .env.example .env
 source .venv/bin/activate
 ```
 
+## Current status
+
+This branch contains the project skeleton for Phase 3. The CLI, contracts, trace recorder, settings, MCP interfaces, model interfaces, and eval harness are in place. Live model adapters and live MCP transports are the next implementation steps.
+
 ## Usage
 
 ```bash
-# Ask a question (uses Anthropic by default)
+# Smoke-test the skeleton CLI
 lorekeeper "What tables are in the hive catalog?"
 
-# Use the local Ollama model instead
-lorekeeper --backend ollama "Show me 10 rows from the orders table"
-
-# Show tool call count (useful for learning)
+# Show skeleton status and trace id
 lorekeeper --verbose "Which customers have pending shipments?"
 ```
 
@@ -131,11 +133,15 @@ lorekeeper/
 ├── .env.example            # env var template
 ├── .python-version         # pinned to 3.13.13 (pyenv)
 │
-├── lorekeeper/             # Python package
-│   ├── __init__.py
-│   ├── models.py           # ModelBackend protocol + Anthropic/Ollama impls
-│   ├── runtime.py          # AgentRuntime: MCP sessions + agent loop
-│   └── cli.py              # Typer CLI (entry point: lorekeeper)
+├── src/
+│   └── lorekeeper/         # Python package
+│       ├── __init__.py
+│       ├── cli.py          # Typer CLI (entry point: lorekeeper)
+│       ├── agent/          # Agent runtime and orchestration
+│       ├── core/           # Settings and public contracts
+│       ├── mcp/            # MCP server config + client protocols
+│       ├── model/          # ModelBackend protocol + placeholder backend
+│       └── observability/  # JSONL trace recorder
 │
 ├── prompts/
 │   └── lorekeeper-system.md  # System prompt (iterated, versioned)
@@ -145,6 +151,8 @@ lorekeeper/
 │   └── run_eval.py         # Harness: run benchmark, print results
 │
 ├── tests/
+│   ├── test_config.py
+│   ├── test_contracts.py
 │   └── test_runtime.py
 │
 └── .claude/
@@ -159,9 +167,10 @@ This project follows a phase-by-phase plan. Each phase produces something workin
 | Phase | Goal | Status |
 |-------|------|--------|
 | 0 | Understand MCP; confirm local stack works | Done |
-| 1 | Trino MCP server connected; AI client can query tables | **Current** |
-| 2 | OpenMetadata MCP; metadata-driven table discovery | Planned |
-| 3 | Full Lorekeeper agent with CLI and evals | Planned |
+| 1 | Trino MCP server connected; AI client can query tables | Done |
+| 2 | MCP servers wired | Done |
+| 2.5 | Golden traces | Current |
+| 3 | Full Lorekeeper agent with CLI and evals | Skeleton started |
 | 4 | Agent composition — Streamwright delegates to Lorekeeper | Planned |
 | 5 | Production hardening — auth, observability, PII masking | Future |
 
@@ -181,4 +190,4 @@ Full plan: [`.claude/docs/03-learning-path.md`](.claude/docs/03-learning-path.md
 | Anthropic (default) | `ANTHROPIC_API_KEY` in `.env` | Development, evals |
 | Ollama (local) | `OLLAMA_MODEL=qwen2.5:14b` | Sensitive data, offline |
 
-Swap backends with `--backend ollama`. No code changes needed.
+Concrete Anthropic and Ollama adapters are not wired in this skeleton yet.

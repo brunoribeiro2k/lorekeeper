@@ -47,10 +47,14 @@ lorekeeper/
 │   └── docs/               # On-demand reference
 ├── prompts/
 │   └── lorekeeper-system.md
-├── agent/
-│   ├── runtime.py
-│   ├── models.py
-│   └── cli.py
+├── src/
+│   └── lorekeeper/
+│       ├── cli.py
+│       ├── agent/
+│       ├── core/
+│       ├── mcp/
+│       ├── model/
+│       └── observability/
 ├── evals/
 │   ├── questions.yaml
 │   └── run_eval.py

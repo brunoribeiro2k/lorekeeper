@@ -85,10 +85,20 @@ lorekeeper/
 │       └── 06-glossary.md
 ├── prompts/
 │   └── lorekeeper-system.md
-├── agent/
-│   ├── runtime.py
-│   ├── models.py
-│   └── cli.py
+├── src/
+│   └── lorekeeper/
+│       ├── cli.py
+│       ├── agent/
+│       │   └── runtime.py
+│       ├── core/
+│       │   ├── config.py
+│       │   └── contracts.py
+│       ├── mcp/
+│       │   └── client.py
+│       ├── model/
+│       │   └── backend.py
+│       └── observability/
+│           └── tracing.py
 ├── evals/
 │   ├── questions.yaml
 │   └── run_eval.py
